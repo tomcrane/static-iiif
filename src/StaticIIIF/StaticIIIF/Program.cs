@@ -2,6 +2,7 @@
 using IIIF.ImageApi;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
+using IIIF.Presentation;
 using IIIF.Presentation.V3;
 using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Strings;
@@ -168,6 +169,8 @@ class Program
                 }
             ]
         };
+        
+        manifest.EnsureContext(Context.Presentation3Context);
         
         var manifestFile = infoJsonFile.Replace("info.json", "manifest.json");
         File.WriteAllText(manifestFile, manifest.AsJson());

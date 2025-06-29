@@ -101,17 +101,21 @@ class Program
             if (sizes.All(s => s.Width != targetSize.Width))
             {
                 sizes.Add(targetSize);
-                var sizeIm = im.ThumbnailImage(width: targetSize.Width, height: targetSize.Height, size:Enums.Size.Force);
-                var sizeFolder =  Path.Combine(destFolder, "full", $"{targetSize.Width},{targetSize.Height}", "0"); // v3 size
-                Directory.CreateDirectory(sizeFolder);
-                if (settings.Jpeg)
-                {
-                    sizeIm.Jpegsave(Path.Combine(sizeFolder, "default.jpg"));
-                }
-                if (settings.WebP)
-                {
-                    sizeIm.Webpsave(Path.Combine(sizeFolder, "default.webp"));
-                }
+            }
+        }
+        
+        foreach (var size in sizes)
+        {
+            var sizeIm = im.ThumbnailImage(width: size.Width, height: size.Height, size:Enums.Size.Force);
+            var sizeFolder =  Path.Combine(destFolder, "full", $"{size.Width},{size.Height}", "0"); // v3 size
+            Directory.CreateDirectory(sizeFolder);
+            if (settings.Jpeg)
+            {
+                sizeIm.Jpegsave(Path.Combine(sizeFolder, "default.jpg"));
+            }
+            if (settings.WebP)
+            {
+                sizeIm.Webpsave(Path.Combine(sizeFolder, "default.webp"));
             }
         }
 
@@ -161,6 +165,10 @@ class Program
                                         Height = imageResourceSize.Height,
                                         Format = "image/jpg",
                                         Service = [ imgSvc ]
+                                    },
+                                    Target = new Canvas
+                                    {
+                                        Id = imgSvc.Id + "/canvas"
                                     }
                                 }
                             ]

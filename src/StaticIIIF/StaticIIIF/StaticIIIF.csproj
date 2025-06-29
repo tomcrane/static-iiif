@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PublishAot>true</PublishAot>
+        <InvariantGlobalization>true</InvariantGlobalization>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="iiif-net" Version="0.3.7" />
+      <PackageReference Include="NetVips" Version="3.1.0" />
+      <PackageReference Include="NetVips.Extensions" Version="3.0.0" />
+      <PackageReference Include="NetVips.Native" Version="8.17.0.1" />
+    </ItemGroup>
+
+</Project>

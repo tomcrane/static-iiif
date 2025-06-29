@@ -2,6 +2,9 @@
 using IIIF.ImageApi;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
+using IIIF.Presentation.V3;
+using IIIF.Presentation.V3.Annotation;
+using IIIF.Presentation.V3.Strings;
 using IIIF.Serialisation;
 using NetVips;
 
@@ -98,7 +101,7 @@ class Program
             {
                 sizes.Add(targetSize);
                 var sizeIm = im.ThumbnailImage(width: targetSize.Width, height: targetSize.Height, size:Enums.Size.Force);
-                var sizeFolder =  Path.Combine(destFolder, "full", $"{targetSize.Width},", "0");
+                var sizeFolder =  Path.Combine(destFolder, "full", $"{targetSize.Width},{targetSize.Height}", "0"); // v3 size
                 Directory.CreateDirectory(sizeFolder);
                 if (settings.Jpeg)
                 {
@@ -123,6 +126,50 @@ class Program
         }
         
         File.WriteAllText(infoJsonFile, imgSvc.AsJson());
+        if (sizes.Count == 0)
+        {
+            return;
+        }
 
+        var imageResourceSize = sizes.Last();
+        var manifest = new Manifest
+        {
+            Id = imgSvc.Id + "/manifest.json",
+            Label = new LanguageMap("en", imageFile),
+            Items =
+            [
+                new Canvas
+                {
+                    Id = imgSvc.Id + "/canvas",
+                    Label = new LanguageMap("en", "single canvas for " + imageFile),
+                    Width = actualSize.Width,
+                    Height = actualSize.Height,
+                    Items = [
+                        new AnnotationPage
+                        {
+                            Id = imgSvc.Id + "/page",
+                            Label = new LanguageMap("en", "single anno page for " + imageFile),
+                            Items = [
+                                new PaintingAnnotation
+                                {
+                                    Id = imgSvc.Id + "/painting",
+                                    Body = new IIIF.Presentation.V3.Content.Image
+                                    {
+                                        Id = $"{imgSvc.Id}/full/{imageResourceSize.Width},{imageResourceSize.Height}/0/default.jpg",
+                                        Width = imageResourceSize.Width,
+                                        Height = imageResourceSize.Height,
+                                        Format = "image/jpg",
+                                        Service = [ imgSvc ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+        
+        var manifestFile = infoJsonFile.Replace("info.json", "manifest.json");
+        File.WriteAllText(manifestFile, manifest.AsJson());
     }
 }

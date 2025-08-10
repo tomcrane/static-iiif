@@ -18,5 +18,5 @@ public class StaticSettings
         // Max will be added if not present already
     ];
 
-    public string BaseUrl { get; set; } = "https://tomcrane.github.io/yesterdays-lambeth-today/iiif-img";
+    public string BaseUrl { get; set; } = "https://tomcrane.github.io/yesterdays-lambeth-today-iiif-img";
 }

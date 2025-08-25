@@ -117,6 +117,17 @@ class Program
             {
                 sizeIm.Webpsave(Path.Combine(sizeFolder, "default.webp"));
             }
+
+            if (settings.MakeWidthOnlySize)
+            {
+                // temporary
+                var sizeFolderW =  Path.Combine(destFolder, "full", $"{size.Width},", "0"); // v2 w, size
+                Directory.CreateDirectory(sizeFolderW);
+                foreach (string img in Directory.GetFiles(sizeFolder, "*.*"))
+                {
+                    File.Copy(img, img.Replace(sizeFolder, sizeFolderW), true);
+                }
+            }
         }
 
         if (sizes.Any())

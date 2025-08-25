@@ -19,4 +19,7 @@ public class StaticSettings
     ];
 
     public string BaseUrl { get; set; } = "https://tomcrane.github.io/yesterdays-lambeth-today-iiif-img";
+    
+    // Temporary for Theseus issue
+    public bool MakeWidthOnlySize { get; set; } = true;
 }

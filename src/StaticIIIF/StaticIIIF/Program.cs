@@ -174,7 +174,7 @@ class Program
                                         Id = $"{imgSvc.Id}/full/{imageResourceSize.Width},{imageResourceSize.Height}/0/default.jpg",
                                         Width = imageResourceSize.Width,
                                         Height = imageResourceSize.Height,
-                                        Format = "image/jpg",
+                                        Format = "image/jpeg",
                                         Service = [ imgSvc ]
                                     },
                                     Target = new Canvas

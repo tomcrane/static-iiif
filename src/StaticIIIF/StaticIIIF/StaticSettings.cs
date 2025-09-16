@@ -2,8 +2,10 @@ namespace StaticIIIF;
 
 public class StaticSettings
 {
-    public bool Jpeg { get; set; } = true;
-    public bool WebP { get; set; } = true;
+    public bool JpegTiles { get; set; } = true;
+    public bool WebPTiles { get; set; } = true;
+    public bool JpegPTiff { get; set; } = true;
+    public bool WebPTiff { get; set; } = true;
     public string Max { get; set; } = "!1600,1600";
     public int TileSize { get; set; } = 512;
 

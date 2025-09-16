@@ -1,4 +1,5 @@
-﻿using IIIF;
+﻿using System.IO.Enumeration;
+using IIIF;
 using IIIF.ImageApi;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
@@ -39,12 +40,13 @@ class Program
 
     private static void Process(string imageFile, string destFolder)
     {
+        var start = DateTime.Now;
         var settings = new StaticSettings();
         using var im = Image.NewFromFile(imageFile);
         
         try
         {
-            if (settings.Jpeg)
+            if (settings.JpegTiles)
             {
                 // Save image pyramid
                 im.Dzsave(destFolder, 
@@ -53,7 +55,7 @@ class Program
                     id:settings.BaseUrl);
             }
 
-            if (settings.WebP)
+            if (settings.WebPTiles)
             {
                 // This will overwrite the info.json but that's OK
                 im.Dzsave(destFolder, 
@@ -61,6 +63,28 @@ class Program
                     tileSize:settings.TileSize,
                     id:settings.BaseUrl,
                     suffix: ".webp");
+            }
+
+            if (settings.JpegPTiff)
+            {
+                im.Tiffsave(
+                    filename:$"{destFolder}{Path.DirectorySeparatorChar}jpeg-p.tif",
+                    tileWidth: settings.TileSize,
+                    tileHeight: settings.TileSize,
+                    pyramid: true,
+                    compression: Enums.ForeignTiffCompression.Jpeg,
+                    q: 75);
+            }
+            
+            if (settings.WebPTiff)
+            {
+                im.Tiffsave(
+                    filename:$"{destFolder}{Path.DirectorySeparatorChar}webp-p.tif",
+                    tileWidth: settings.TileSize,
+                    tileHeight: settings.TileSize,
+                    pyramid: true,
+                    compression: Enums.ForeignTiffCompression.Webp,
+                    q: 75);
             }
         }
         catch (VipsException exception)
@@ -84,11 +108,11 @@ class Program
             var maxAsThumb = im.ThumbnailImage(width: maxSize.Width, height: maxSize.Height, size:Enums.Size.Force);
             var fullMax0Folder = Path.Combine(destFolder, "full", "max", "0");
             Directory.CreateDirectory(fullMax0Folder);
-            if (settings.Jpeg)
+            if (settings.JpegTiles)
             {
                 maxAsThumb.Jpegsave(Path.Combine(fullMax0Folder, "default.jpg"));
             }
-            if (settings.WebP)
+            if (settings.WebPTiles)
             {
                 maxAsThumb.Webpsave(Path.Combine(fullMax0Folder, "default.webp"));
             }
@@ -109,11 +133,11 @@ class Program
             var sizeIm = im.ThumbnailImage(width: size.Width, height: size.Height, size:Enums.Size.Force);
             var sizeFolder =  Path.Combine(destFolder, "full", $"{size.Width},{size.Height}", "0"); // v3 size
             Directory.CreateDirectory(sizeFolder);
-            if (settings.Jpeg)
+            if (settings.JpegTiles)
             {
                 sizeIm.Jpegsave(Path.Combine(sizeFolder, "default.jpg"));
             }
-            if (settings.WebP)
+            if (settings.WebPTiles)
             {
                 sizeIm.Webpsave(Path.Combine(sizeFolder, "default.webp"));
             }
@@ -135,7 +159,7 @@ class Program
             sizes.Sort((a, b) => a.Width.CompareTo(b.Width));
             imgSvc.Sizes = sizes;
         }
-        if (settings.WebP)
+        if (settings.WebPTiles)
         {
             imgSvc.PreferredFormats = ["webp"];
             imgSvc.ExtraFormats = ["webp"];
@@ -193,5 +217,8 @@ class Program
         
         var manifestFile = infoJsonFile.Replace("info.json", "manifest.json");
         File.WriteAllText(manifestFile, manifest.AsJson());
+        
+        var timeTaken = DateTime.Now - start;
+        Console.WriteLine($"Time taken: {timeTaken.TotalMilliseconds}ms");
     }
 }

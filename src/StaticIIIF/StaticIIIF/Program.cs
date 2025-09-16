@@ -1,8 +1,6 @@
 ﻿using System.Diagnostics;
-using System.IO.Enumeration;
 using IIIF;
 using IIIF.ImageApi;
-using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
 using IIIF.Presentation;
 using IIIF.Presentation.V3;

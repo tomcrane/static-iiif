@@ -1,4 +1,5 @@
-﻿using System.IO.Enumeration;
+﻿using System.Diagnostics;
+using System.IO.Enumeration;
 using IIIF;
 using IIIF.ImageApi;
 using IIIF.ImageApi.V2;
@@ -40,9 +41,20 @@ class Program
 
     private static void Process(string imageFile, string destFolder)
     {
-        var start = DateTime.Now;
         var settings = new StaticSettings();
+        if (settings is { JpegTiles: false, WebPTiles: false, JpegPTiff: false, WebPTiff: false })
+        {
+            Console.WriteLine("No derivatives to make");
+            return;
+        }
+        
+        var stopwatch = new Stopwatch();
+        var start = DateTime.Now;
+        stopwatch.Start();
         using var im = Image.NewFromFile(imageFile);
+        Console.WriteLine($"Loaded {imageFile} in {stopwatch.ElapsedMilliseconds}ms");
+        stopwatch.Restart();
+
         
         try
         {
@@ -53,6 +65,8 @@ class Program
                     layout:Enums.ForeignDzLayout.Iiif3, 
                     tileSize:settings.TileSize,
                     id:settings.BaseUrl);
+                Console.WriteLine($"Saved JPEG tiles in {stopwatch.ElapsedMilliseconds}ms");
+                stopwatch.Restart();
             }
 
             if (settings.WebPTiles)
@@ -63,10 +77,13 @@ class Program
                     tileSize:settings.TileSize,
                     id:settings.BaseUrl,
                     suffix: ".webp");
+                Console.WriteLine($"Saved WebP tiles in {stopwatch.ElapsedMilliseconds}ms");
+                stopwatch.Restart();
             }
 
             if (settings.JpegPTiff)
             {
+                Directory.CreateDirectory(destFolder); // if not created by above
                 im.Tiffsave(
                     filename:$"{destFolder}{Path.DirectorySeparatorChar}jpeg-p.tif",
                     tileWidth: settings.TileSize,
@@ -74,10 +91,13 @@ class Program
                     pyramid: true,
                     compression: Enums.ForeignTiffCompression.Jpeg,
                     q: 75);
+                Console.WriteLine($"Generated JPEG Pyramidal tiff in {stopwatch.ElapsedMilliseconds}ms");
+                stopwatch.Restart();
             }
             
             if (settings.WebPTiff)
             {
+                Directory.CreateDirectory(destFolder); // if not created by above
                 im.Tiffsave(
                     filename:$"{destFolder}{Path.DirectorySeparatorChar}webp-p.tif",
                     tileWidth: settings.TileSize,
@@ -85,6 +105,7 @@ class Program
                     pyramid: true,
                     compression: Enums.ForeignTiffCompression.Webp,
                     q: 75);
+                Console.WriteLine($"Generated WebP Pyramidal tiff in {stopwatch.ElapsedMilliseconds}ms");
             }
         }
         catch (VipsException exception)
@@ -94,27 +115,48 @@ class Program
             Console.WriteLine("\n" + exception.Message);
         }
 
+        ImageService3 imgSvc;
         var infoJsonFile = Path.Combine(destFolder, "info.json");
-        var infoJson = File.ReadAllText(infoJsonFile);
-        var imgSvc = infoJson.FromJson<ImageService3>();
-        var actualSize = new Size(imgSvc.Width, imgSvc.Height);
+        var actualSize = new Size(im.Width, im.Height);
+        if (settings.JpegTiles || settings.WebPTiles)
+        {
+            var infoJson = File.ReadAllText(infoJsonFile);
+            imgSvc = infoJson.FromJson<ImageService3>();
+        }
+        else
+        {
+            // This is a partially populated image service if you are using a TIFF - get the real one from your image server.
+            // Its main purpose is to emit the `sizes`.
+            imgSvc = new ImageService3
+            {
+                Id = $"{settings.BaseUrl}/{destFolder.Split(Path.DirectorySeparatorChar)[^1]}",
+                Width = im.Width,
+                Height = im.Height,
+                Profile = "level2"
+            };
+        }
 
         var sizes = new List<Size>();
         if (!string.IsNullOrWhiteSpace(settings.Max))
         {
+            stopwatch.Restart();
             var sp = SizeParameter.Parse(settings.Max);
             var maxSize = sp.Resize(actualSize);
             sizes.Add(maxSize);
             var maxAsThumb = im.ThumbnailImage(width: maxSize.Width, height: maxSize.Height, size:Enums.Size.Force);
+            Console.WriteLine($"Loaded maxAsThumb in {stopwatch.ElapsedMilliseconds}ms");
+            stopwatch.Restart();
             var fullMax0Folder = Path.Combine(destFolder, "full", "max", "0");
             Directory.CreateDirectory(fullMax0Folder);
             if (settings.JpegTiles)
             {
                 maxAsThumb.Jpegsave(Path.Combine(fullMax0Folder, "default.jpg"));
+                Console.WriteLine($"Saved max thumb as Jpeg in {stopwatch.ElapsedMilliseconds}ms");
             }
             if (settings.WebPTiles)
             {
                 maxAsThumb.Webpsave(Path.Combine(fullMax0Folder, "default.webp"));
+                Console.WriteLine($"Saved max thumb as WebP in {stopwatch.ElapsedMilliseconds}ms");
             }
         }
 
@@ -130,6 +172,7 @@ class Program
         
         foreach (var size in sizes)
         {
+            stopwatch.Restart();
             var sizeIm = im.ThumbnailImage(width: size.Width, height: size.Height, size:Enums.Size.Force);
             var sizeFolder =  Path.Combine(destFolder, "full", $"{size.Width},{size.Height}", "0"); // v3 size
             Directory.CreateDirectory(sizeFolder);
@@ -152,6 +195,7 @@ class Program
                     File.Copy(img, img.Replace(sizeFolder, sizeFolderW), true);
                 }
             }
+            Console.WriteLine($"Created {size} thumb in {stopwatch.ElapsedMilliseconds}ms");
         }
 
         if (sizes.Any())
@@ -164,14 +208,9 @@ class Program
             imgSvc.PreferredFormats = ["webp"];
             imgSvc.ExtraFormats = ["webp"];
         }
-        
         File.WriteAllText(infoJsonFile, imgSvc.AsJson());
-        if (sizes.Count == 0)
-        {
-            return;
-        }
-
-        var imageResourceSize = sizes.Last();
+        
+        var imageResourceSize = sizes.LastOrDefault() ?? actualSize;
         var manifest = new Manifest
         {
             Id = imgSvc.Id + "/manifest.json",
@@ -218,7 +257,6 @@ class Program
         var manifestFile = infoJsonFile.Replace("info.json", "manifest.json");
         File.WriteAllText(manifestFile, manifest.AsJson());
         
-        var timeTaken = DateTime.Now - start;
-        Console.WriteLine($"Time taken: {timeTaken.TotalMilliseconds}ms");
+        Console.WriteLine($"Total time taken {(DateTime.Now - start).TotalMilliseconds}ms");
     }
 }

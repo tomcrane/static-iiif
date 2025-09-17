@@ -5,9 +5,11 @@ using IIIF.ImageApi.V3;
 using IIIF.Presentation;
 using IIIF.Presentation.V3;
 using IIIF.Presentation.V3.Annotation;
+using IIIF.Presentation.V3.Content;
 using IIIF.Presentation.V3.Strings;
 using IIIF.Serialisation;
 using NetVips;
+using Image = NetVips.Image;
 
 namespace StaticIIIF;
 
@@ -249,6 +251,27 @@ class Program
                 }
             ]
         };
+
+        if (settings.JpegPTiff)
+        {
+            manifest.Items[0].Rendering ??= [];
+            manifest.Items[0].Rendering.Add(new ExternalResource("Image")
+            {
+                Id = imgSvc.Id + "/jpeg-p.tif",
+                Format = "image/tiff",
+                Label = new LanguageMap("en", "Pyramidal tiff encoded with JPEG tiles")
+            });
+        }
+        if (settings.WebPTiff)
+        {
+            manifest.Items[0].Rendering ??= [];
+            manifest.Items[0].Rendering!.Add(new ExternalResource("Image")
+            {
+                Id = imgSvc.Id + "/webp-p.tif",
+                Format = "image/tiff",
+                Label = new LanguageMap("en", "Pyramidal tiff encoded with WebP tiles")
+            });
+        }
         
         manifest.EnsureContext(Context.Presentation3Context);
         

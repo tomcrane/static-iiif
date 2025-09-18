@@ -252,10 +252,11 @@ class Program
             ]
         };
 
+        var firstCanvas = manifest.Items[0];
         if (settings.JpegPTiff)
         {
-            manifest.Items[0].Rendering ??= [];
-            manifest.Items[0].Rendering.Add(new ExternalResource("Image")
+            firstCanvas.Rendering ??= [];
+            firstCanvas.Rendering.Add(new ExternalResource("Image")
             {
                 Id = imgSvc.Id + "/jpeg-p.tif",
                 Format = "image/tiff",
@@ -264,8 +265,8 @@ class Program
         }
         if (settings.WebPTiff)
         {
-            manifest.Items[0].Rendering ??= [];
-            manifest.Items[0].Rendering!.Add(new ExternalResource("Image")
+            firstCanvas.Rendering ??= [];
+            firstCanvas.Rendering.Add(new ExternalResource("Image")
             {
                 Id = imgSvc.Id + "/webp-p.tif",
                 Format = "image/tiff",

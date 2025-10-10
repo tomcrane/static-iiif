@@ -141,7 +141,7 @@ class Program
         {
             stopwatch.Restart();
             var sp = SizeParameter.Parse(settings.Max);
-            var maxSize = sp.Resize(actualSize);
+            var maxSize = sp.Resize(actualSize, upscaleBehaviour:InvalidUpscaleBehaviour.ReturnOriginal);
             sizes.Add(maxSize);
             var maxAsThumb = im.ThumbnailImage(width: maxSize.Width, height: maxSize.Height, size:Enums.Size.Force);
             Console.WriteLine($"Loaded maxAsThumb in {stopwatch.ElapsedMilliseconds}ms");
@@ -163,10 +163,17 @@ class Program
         foreach (var sizeParam in settings.Sizes)
         {
             var sp = SizeParameter.Parse(sizeParam);
-            var targetSize = sp.Resize(actualSize);
-            if (sizes.All(s => s.Width != targetSize.Width))
+            try
             {
-                sizes.Add(targetSize);
+                var targetSize = sp.Resize(actualSize, InvalidUpscaleBehaviour.Throw);
+                if (sizes.All(s => s.Width != targetSize.Width))
+                {
+                    sizes.Add(targetSize);
+                }
+            }
+            catch
+            {
+                // can't make that size without upscaling
             }
         }
         
